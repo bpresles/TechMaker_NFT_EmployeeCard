@@ -1,3 +1,6 @@
+# Solidity
+contracts/artifacts
+
 # Logs
 logs
 *.log
