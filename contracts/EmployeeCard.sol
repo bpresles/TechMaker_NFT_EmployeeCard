@@ -8,11 +8,16 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract EmployeeCard is ERC721EnumerableNonTransferable {
 
-  // Map of token URIs by tokenId.
-  mapping(uint256 => string)  private _uris;
+  /**
+   * On chain card data structure.
+   */
+  struct CardData {
+    string tokenURI;
+    uint256 startDate;
+  }
 
-  // Map of employees start dates by tokenId.
-  mapping(uint256 => uint256) private _startDates;
+  // Map of cards data by tokenId.
+  mapping(uint256 => CardData)  private _cards;
 
   constructor(string memory name, string memory symbol) ERC721(name, symbol) ERC721EnumerableNonTransferable() {}
     
@@ -21,7 +26,7 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
    */
   function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
     require(_exists(tokenId), "EmployeeCard: token does not exist");
-    return string(_uris[tokenId]);
+    return string(_cards[tokenId].tokenURI);
   }
 
   /**
@@ -32,8 +37,7 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
     _safeMint(recipient, tokenId);
 
     require(_exists(tokenId), "ERC721: invalid token ID");
-    _uris[tokenId] = _tokenURI;
-    _startDates[tokenId] = _startDate;
+    _cards[tokenId] = CardData(_tokenURI, _startDate);
     _approve(owner(), tokenId);
 
     return tokenId;
@@ -44,8 +48,8 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
    */
    function getEmployeeVacationRights(uint256 tokenId) public view returns(uint256) {
     _requireMinted(tokenId);
-    
-    uint256 nbOfFullYears = (block.timestamp - _startDates[tokenId]) / 31536000;
+
+    uint256 nbOfFullYears = (block.timestamp - _cards[tokenId].startDate) / 31536000;
     uint256 nbAdditionalDays = nbOfFullYears/2;
 
     return 25 + nbAdditionalDays;
