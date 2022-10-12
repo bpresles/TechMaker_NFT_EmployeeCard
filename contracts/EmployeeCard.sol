@@ -19,6 +19,10 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
   // Map of cards data by tokenId.
   mapping(uint256 => CardData)  private _cards;
 
+  // Event when tokens are sent.
+  event tokenReceived(address sender, uint256 amount);
+  event callReceived(address sender, uint256 amount, bytes data);
+
   constructor(string memory name, string memory symbol) ERC721(name, symbol) ERC721EnumerableNonTransferable() {}
     
   /**
@@ -60,6 +64,17 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
    */
   function destruct() public onlyOwner {
     selfdestruct(payable(owner()));
+  }
+
+  /**
+   * Only the owner should be able to add tokens to this contract.
+   */
+  receive() external payable onlyOwner {
+    emit tokenReceived(msg.sender, msg.value);
+  }
+
+  fallback() external payable onlyOwner {
+    emit callReceived(msg.sender, msg.value, msg.data);
   }
 
 }
