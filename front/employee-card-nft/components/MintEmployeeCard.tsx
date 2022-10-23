@@ -166,7 +166,7 @@ const MintEmployeeCard = () => {
                     console.log('ipfs://' + response.cid);
                     setMinting(true);
                     
-                    mintEmployeeCard(wallet, 'ipfs://' + response.cid, dDateObj.getTime())
+                    mintEmployeeCard(wallet, 'ipfs://' + response.cid, dDateObj.getTime()/1000)
                     .then((response: ContractTransaction) => {
                         setErrorMessage('');
                         setSuccessMessage(`Minting in progress, transaction number: Transaction number: ${response.hash}`);

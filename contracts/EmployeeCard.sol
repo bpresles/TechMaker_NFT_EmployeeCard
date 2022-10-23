@@ -56,10 +56,12 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
   /**
    * Calculate total amount of days the employee can expect according to its time in the company.
    */
-   function getEmployeeVacationRights(uint256 tokenId) public view returns(uint256) {
-    _requireMinted(tokenId);
+   function getEmployeeVacationRights(address employee) public view returns(uint256) {
+    _requireMinted(_cards[employee]);
 
-    uint256 nbOfFullYears = (block.timestamp - _cardsData[tokenId].startDate) / 31536000;
+    uint256 _tokenId = _cards[employee];
+
+    uint256 nbOfFullYears = (block.timestamp - _cardsData[_tokenId].startDate) / 31536000;
     uint256 nbAdditionalDays = nbOfFullYears/5;
 
     return 25 + nbAdditionalDays;

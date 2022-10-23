@@ -1,9 +1,9 @@
 import useSWR from "swr";
-import type { EmployeeCardFactory } from "../contracts/types";
+import type { EmployeeCard } from "../contracts/types";
 import useKeepSWRDataLiveAsBlocksArrive from "./useKeepSWRDataLiveAsBlocksArrive";
 import useEmployeeCardContract from "./useEmployeeCardContract";
 
-function getEmployeeCardBalance(contract: EmployeeCardFactory) {
+function getEmployeeCardBalance(contract: EmployeeCard) {
   return async (_: string, address: string) => {
     const balance = await contract.balanceOf(address);
 
