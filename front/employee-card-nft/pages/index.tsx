@@ -3,9 +3,7 @@ import Head from "next/head";
 import Link from "next/link";
 import Account from "../components/Account";
 import ETHBalance from "../components/ETHBalance";
-import TokenBalance from "../components/TokenBalance";
 import useEagerConnect from "../hooks/useEagerConnect";
-import EmployeeCardFactory from "../contracts/EmployeeCardFactory.json"
 import MintEmployeeCard from "../components/MintEmployeeCard";
 
 function Home() {
@@ -45,8 +43,7 @@ function Home() {
           <section>
             <ETHBalance />
 
-            <TokenBalance />
-            <MintEmployeeCard tokenURI="ipfs://QmQFc7MmRgnFSqfQngnzbnByZYBNxuqjrVPL62ZAnc4nV1" startDate={startDate} />
+            <MintEmployeeCard />
           </section>
         )}
       </main>

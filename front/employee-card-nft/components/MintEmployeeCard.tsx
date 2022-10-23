@@ -1,21 +1,13 @@
-import type { Web3Provider } from "@ethersproject/providers";
-import { useWeb3React } from "@web3-react/core";
-import { UserRejectedRequestError } from "@web3-react/injected-connector";
 import { useState } from "react";
-import EmployeeCardFactory from "../contracts/EmployeeCardFactory.json"
-import useEmployeeCardBalance from "../hooks/useEmployeeCardBalance";
 import useEmployeeCardContract from "../hooks/useEmployeeCardContract";
 import useMetaMaskOnboarding from "../hooks/useMetaMaskOnboarding";
-import { parseBalance } from "../util";
-import Image from "next/image";
 import ipfs from "./Ipfs";
 import Script from "next/script";
+import TokenBalance from "./TokenBalance";
+import { formatUnits } from "@ethersproject/units";
+import { ContractTransaction, ContractReceipt } from "ethers";
 
 const MintEmployeeCard = () => {
-
-
-    const { active, error, activate, chainId, account, setError } =
-        useWeb3React();
     const { contract, mintEmployeeCard } = useEmployeeCardContract();
 
     const {
@@ -23,18 +15,20 @@ const MintEmployeeCard = () => {
         isWeb3Available,
     } = useMetaMaskOnboarding();
 
-    const {data} = useEmployeeCardBalance(account);
-    const balance = data ?? 0;
-
     // manage minting state
     const [minting, setMinting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [birthDate, setBirthDate] = useState('');
     const [startDate, setStartDate] = useState('');
     const [picture, setPicture] = useState('');
+    const [file, setFile] = useState(null);
     const [wallet, setWallet] = useState('');
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [transaction, setTransaction] = useState(null);
 
     const handleFirstNameChange = (event) => {
         setFirstName(event.target.value);
@@ -52,11 +46,33 @@ const MintEmployeeCard = () => {
         setPictureBase64(event.target.files[0]);
     };
     const handleWalletAddress = (event) => {
-        setWallet(event.target.value);
+        setErrorMessage('');
+        setWalletBalance(0);
+        if (event.target.value != '' && event.target.value.match(/(\b0x[a-fA-F0-9]{40}\b)/g)) {
+            setWallet(event.target.value);
+
+            contract.balanceOf(event.target.value).then((balance) => {
+                const userBalance = parseFloat(formatUnits(balance, 18));
+                /*setWalletBalance(userBalance);
+
+                if (userBalance > 0) {
+                    setErrorMessage('An employee can only have 1 card.');
+                }
+                else {
+                    setErrorMessage('');
+                }*/
+            })
+            .catch((err: Error) => {
+                console.log(err.message);
+                setWalletBalance(0);
+            });
+        }
     }
 
     const validateFormAndMint = (event) => {
         event.preventDefault();
+        setMinting(false);
+        setErrorMessage('');
         
         const dateFormatRegex = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
         if (!birthDate.match(dateFormatRegex)) {
@@ -82,10 +98,12 @@ const MintEmployeeCard = () => {
             alert("You must upload a picture");
         }
 
-        generatePdfCard(firstName, lastName, birthDate, startDate, picture);
+        generateImageCard(firstName, lastName, birthDate, startDate, picture);
     };
 
     const setPictureBase64 = (file) => {
+        setFile(file);
+
         let reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = function () {
@@ -96,7 +114,7 @@ const MintEmployeeCard = () => {
         };
     };
 
-    const generatePdfCard = async (fname: string, lname: string, bdate: string, sdate: string, pict: string) => {
+    const generateImageCard = async (fname: string, lname: string, bdate: string, sdate: string, pict: string) => {
         document.getElementById('employeePicture').setAttribute('src', 'data:image/*;' + pict);
         document.getElementById('employeeFirstname').innerHTML = fname;
         document.getElementById('employeeLastname').innerHTML = lname;
@@ -108,15 +126,27 @@ const MintEmployeeCard = () => {
         html2pdf().from(element).toImg().outputImg('dataurl').then((cardBase64) => {
             console.log(cardBase64);
             document.getElementById('generatedCard').setAttribute('src', cardBase64);
-            generateNFTMetadataAndUploadToIpfs(cardBase64, firstName, lastName, birthDate, startDate);
+
+            ipfs.add(file, {pin:true})
+            .then(response => {
+                const imageUri = `ipfs://${response.cid}`;
+                console.log('ipfs://' + response.cid);
+
+                generateNFTMetadataAndUploadToIpfs(imageUri, fname, lname, bdate, sdate);
+            }).catch((err: Error) => {
+                console.log(err.message);
+                setErrorMessage(`IPFS: ${err.message}`);
+
+                setMinting(false);
+            });
         });
     };
     
-    const generateNFTMetadataAndUploadToIpfs = (pdfBase64: string, fname: string, lname: string, bdate: string, sdate: string) => {
+    const generateNFTMetadataAndUploadToIpfs = (imageUri: string, fname: string, lname: string, bdate: string, sdate: string) => {
         const NFTMetaData = {
             "description": "Younup Employee Card", 
             "external_url": "https://www.younup.fr", 
-            "image": pdfBase64, 
+            "image": imageUri, 
             "name": "Younup",
             "attributes": {
                 "firstName": fname,
@@ -134,9 +164,31 @@ const MintEmployeeCard = () => {
         ipfs.add([ifpsBuffer], {pin:true})
                 .then(response => {
                     console.log('ipfs://' + response.cid);
-                    mintEmployeeCard(wallet, 'ipfs://' + response.cid, dDateObj.getTime());
-                }).catch((err) => {
-                    console.log(err);
+                    setMinting(true);
+                    
+                    mintEmployeeCard(wallet, 'ipfs://' + response.cid, dDateObj.getTime())
+                    .then((response: ContractTransaction) => {
+                        setErrorMessage('');
+                        setSuccessMessage(`Minting in progress, transaction number: Transaction number: ${response.hash}`);
+
+                        response.wait(2).then((response: ContractReceipt) => {
+                            console.log(response.status);
+                            setSuccessMessage(`Minting finished ! :)`);
+                        });
+                    })
+                    .catch ((mintErr: Error) => {
+                        console.log(mintErr.message);
+                        setErrorMessage(`Minting: ${mintErr.message}`);
+    
+                        setMinting(false);
+                    });
+
+                    setMinting(false);
+                }).catch((err: Error) => {
+                    console.log(err.message);
+                    setErrorMessage(`IPFS: ${err.message}`);
+
+                    setMinting(false);
                 });
     }
 
@@ -144,7 +196,13 @@ const MintEmployeeCard = () => {
         <div>
             {isWeb3Available ? (
                 <div>
+                    <p>Contract address: {contract.address}</p>
+                    <TokenBalance account={wallet} />
                     <Script src="/js/html2pdf.bundle.min.js"></Script>
+                    <br/>
+                    <div className="success_message">{successMessage}</div>
+                    <div className="error_message">{errorMessage}</div>
+                    <br/>
                     <form method="post" id="mintForm" encType="multipart/form-data" onSubmit={validateFormAndMint}>
                         <div>
                             <label htmlFor="ethaddress">Employee Ethereum wallet address:</label>
@@ -171,7 +229,7 @@ const MintEmployeeCard = () => {
                             <input type="file" name="picture" accept="image/*" onChange={handlePictureChange}></input>
                         </div>
                         <div>
-                            <button type="submit" disabled={minting}>
+                            <button type="submit" disabled={minting/* || walletBalance > 0*/}>
                                 Mint your employee card
                             </button>
                         </div>
@@ -233,6 +291,14 @@ const MintEmployeeCard = () => {
                 #cardPdf .employeeCardDetails {
                     float: left;
                     margin-left: 20px;
+                }
+                .error_message {
+                    color: red;
+                    font-weight: bold;
+                }
+                .success_message {
+                    color: green;
+                    font-weight: bold;
                 }
             `}</style>
         </div>

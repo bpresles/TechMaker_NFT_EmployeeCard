@@ -1,12 +1,12 @@
-import { BigNumberish } from "ethers";
-import EmployeeCardContract from "../contracts/EmployeeCardFactory.json";
-import type { EmployeeCardFactory } from "../contracts/types";
+import { BigNumberish, ContractTransaction } from "ethers";
+import EmployeeCardContract from "../contracts/EmployeeCard.json";
+import type { EmployeeCard } from "../contracts/types";
 import useContract from "./useContract";
 
 export default function useEmployeeCardContract() {
-    const contract: EmployeeCardFactory = useContract<EmployeeCardFactory>(EmployeeCardContract.address, EmployeeCardContract.abi);
+    const contract: EmployeeCard = useContract<EmployeeCard>(EmployeeCardContract.networks[5].address, EmployeeCardContract.abi);
 
-    async function mintEmployeeCard(account: string, tokenURI: string, startDate: BigNumberish) {
+    async function mintEmployeeCard(account: string, tokenURI: string, startDate: BigNumberish): Promise<ContractTransaction> {
         return contract.mint(account, tokenURI, startDate);
     }
 

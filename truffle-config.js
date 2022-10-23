@@ -15,9 +15,9 @@ module.exports = {
           phrase: mnemonicPhrase
         },
         providerOrUrl: "https://goerli.infura.io/v3/918b986adeda41da901d8ce8a0245b34",
-        numberOfAddresses: 1,
+        numberOfAddresses: 10,
         shareNonce: true,
-        derivationPath: "m/44'/1'/0'/0/"
+        derivationPath: "m/44'/60'/0'/0/"
       }),
       network_id: 5
     },

@@ -16,8 +16,11 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
     uint256 startDate;
   }
 
-  // Map of cards data by tokenId.
-  mapping(uint256 => CardData)  private _cards;
+  // Map of cards tokenIds by address of employees.
+  mapping(address => uint256)  private _cards;
+
+  // Map of card data by tokenId.
+  mapping(uint256 => CardData) private _cardsData;
 
   // Event when tokens are sent.
   event tokenReceived(address sender, uint256 amount);
@@ -30,18 +33,21 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
    */
   function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
     require(_exists(tokenId), "EmployeeCard: token does not exist");
-    return string(_cards[tokenId].tokenURI);
+    return string(_cardsData[tokenId].tokenURI);
   }
 
   /**
    * Mint a new employee card SBT token.
    */
-  function mint(address recipient, string memory _tokenURI, uint256 _startDate) public onlyOwner returns(uint256) {
+  function mint(address _recipient, string memory _tokenURI, uint256 _startDate) public onlyOwner returns(uint256) {
+    require(balanceOf(_recipient) == 0, "An employee can only have 1 token");
+
     uint256 tokenId = this.totalSupply();
-    _safeMint(recipient, tokenId);
+    _safeMint(_recipient, tokenId);
 
     require(_exists(tokenId), "ERC721: invalid token ID");
-    _cards[tokenId] = CardData(_tokenURI, _startDate);
+    _cards[_recipient] = tokenId; 
+    _cardsData[tokenId] = CardData(_tokenURI, _startDate);
     _approve(owner(), tokenId);
 
     return tokenId;
@@ -53,10 +59,17 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
    function getEmployeeVacationRights(uint256 tokenId) public view returns(uint256) {
     _requireMinted(tokenId);
 
-    uint256 nbOfFullYears = (block.timestamp - _cards[tokenId].startDate) / 31536000;
-    uint256 nbAdditionalDays = nbOfFullYears/2;
+    uint256 nbOfFullYears = (block.timestamp - _cardsData[tokenId].startDate) / 31536000;
+    uint256 nbAdditionalDays = nbOfFullYears/5;
 
     return 25 + nbAdditionalDays;
+  }
+
+  function burnEmployeeCard(address _holder) public onlyOwner {
+    uint256 tokenId = _cards[_holder];
+    _requireMinted(tokenId);
+
+    burn(tokenId);
   }
 
   /**
