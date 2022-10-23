@@ -5,9 +5,10 @@ import useEmployeeCardBalance from "../hooks/useEmployeeCardBalance";
 import { useWeb3React } from "@web3-react/core";
 import { useState } from "react";
 import { BigNumber } from "ethers";
+import { parseBalanceToken } from "../util";
 
 const EmployeeVacancyRights = () => {
-    const [employeeRights, setEmployeeRights] = useState(0);
+    const [employeeRights, setEmployeeRights] = useState('');
 
     const { account } = useWeb3React();
 
@@ -18,8 +19,8 @@ const EmployeeVacancyRights = () => {
 
     const { contract, getEmployeeVacationRights } = useEmployeeCardContract();
     getEmployeeVacationRights(account).then((response: BigNumber) => {
-        console.log(response);
-        setEmployeeRights(parseInt(response ?? 0));
+        const nbHolidays = parseBalanceToken(response);
+        setEmployeeRights(nbHolidays);
     });
 
     return (
@@ -30,13 +31,12 @@ const EmployeeVacancyRights = () => {
                     <TokenBalance account={account} />
                     <br/>
                     <div>
-                        You've {employeeRights} days of holidays.
+                        You&apos;ve {employeeRights} days of holidays.
                     </div>
                 </div>
             ) : (
                 <p>{isMetaMaskInstalled ? "Connect to MetaMask first" : "Connect to your Wallet first"}</p>
             )}
-            <style jsx>{``}</style>
         </div>
     );
 };

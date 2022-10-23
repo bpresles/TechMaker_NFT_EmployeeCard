@@ -6,8 +6,10 @@ import Script from "next/script";
 import TokenBalance from "./TokenBalance";
 import { formatUnits } from "@ethersproject/units";
 import { ContractTransaction, ContractReceipt } from "ethers";
+import html2pdf from '../node_modules/html2pdf.js/src/index';
 
 const MintEmployeeCard = () => {
+
     const { contract, mintEmployeeCard } = useEmployeeCardContract();
 
     const {
@@ -113,6 +115,16 @@ const MintEmployeeCard = () => {
             console.log('Error: ', error);
         };
     };
+    
+    const dataUrlToFile = async (src) => {
+        return (fetch(src)
+            .then(function(res) {
+                return res.arrayBuffer();
+            }))
+            .then(function(buf) {
+                return new File([buf], 'card.jpg', {type:'image/*'});
+            })
+    };
 
     const generateImageCard = async (fname: string, lname: string, bdate: string, sdate: string, pict: string) => {
         document.getElementById('employeePicture').setAttribute('src', 'data:image/*;' + pict);
@@ -123,21 +135,21 @@ const MintEmployeeCard = () => {
 
         const element = document.getElementById('cardPdf');
         
-        html2pdf().from(element).toImg().outputImg('dataurl').then((cardBase64) => {
-            console.log(cardBase64);
-            document.getElementById('generatedCard').setAttribute('src', cardBase64);
+        html2pdf().from(element).toImg().outputImg('dataurl').then((cardBase64) => {            
+            dataUrlToFile(cardBase64)
+            .then((cardFile) => {
+                ipfs.add(cardFile, {pin:true})
+                .then(response => {
+                    const imageUri = `ipfs://${response.cid}`;
+                    console.log('ipfs://' + response.cid);
 
-            ipfs.add(file, {pin:true})
-            .then(response => {
-                const imageUri = `ipfs://${response.cid}`;
-                console.log('ipfs://' + response.cid);
+                    generateNFTMetadataAndUploadToIpfs(imageUri, fname, lname, bdate, sdate);
+                }).catch((err: Error) => {
+                    console.log(err.message);
+                    setErrorMessage(`IPFS: ${err.message}`);
 
-                generateNFTMetadataAndUploadToIpfs(imageUri, fname, lname, bdate, sdate);
-            }).catch((err: Error) => {
-                console.log(err.message);
-                setErrorMessage(`IPFS: ${err.message}`);
-
-                setMinting(false);
+                    setMinting(false);
+                });
             });
         });
     };
@@ -198,7 +210,6 @@ const MintEmployeeCard = () => {
                 <div>
                     <p>Contract address: {contract.address}</p>
                     <TokenBalance account={wallet} />
-                    <Script src="/js/html2pdf.bundle.min.js"></Script>
                     <br/>
                     <div className="success_message">{successMessage}</div>
                     <div className="error_message">{errorMessage}</div>

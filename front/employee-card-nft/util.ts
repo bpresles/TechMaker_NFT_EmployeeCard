@@ -37,3 +37,10 @@ export const parseBalance = (
   decimals = 18,
   decimalsToDisplay = 3
 ) => parseFloat(formatUnits(value, decimals)).toFixed(decimalsToDisplay);
+
+
+export const parseBalanceToken = (
+  value: BigNumberish,
+  decimals = 18,
+  decimalsToDisplay = 0
+) => (parseFloat(formatUnits(value, decimals))*Math.pow(10,18)).toFixed(decimalsToDisplay);
