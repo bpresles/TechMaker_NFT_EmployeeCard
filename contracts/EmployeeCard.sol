@@ -23,9 +23,8 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
   mapping(uint256 => CardData) private _cardsData;
 
   // Event when tokens are sent.
-  event tokenReceived(address sender, uint256 amount);
-  event callReceived(address sender, uint256 amount, bytes data);
-
+  // TODO: Declare events when card are minted and/or tokens are received in the contract.
+  
   constructor(string memory name, string memory symbol) ERC721(name, symbol) ERC721EnumerableNonTransferable() {}
     
   /**
@@ -33,22 +32,17 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
    */
   function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
     require(_exists(tokenId), "EmployeeCard: token does not exist");
-    return string(_cardsData[tokenId].tokenURI);
+
+    // TODO
+
+    return tokenURI;
   }
 
   /**
    * Mint a new employee card SBT token.
    */
-  function mint(address _recipient, string memory _tokenURI, uint256 _startDate) public onlyOwner returns(uint256) {
-    require(balanceOf(_recipient) == 0, "An employee can only have 1 token");
-
-    uint256 tokenId = this.totalSupply();
-    _safeMint(_recipient, tokenId);
-
-    require(_exists(tokenId), "ERC721: invalid token ID");
-    _cards[_recipient] = tokenId; 
-    _cardsData[tokenId] = CardData(_tokenURI, _startDate);
-    _approve(owner(), tokenId);
+  function mint(address recipient, string memory _tokenURI, uint256 _startDate) public onlyOwner returns(uint256) {
+    // TODO
 
     return tokenId;
   }
@@ -57,14 +51,7 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
    * Calculate total amount of days the employee can expect according to its time in the company.
    */
    function getEmployeeVacationRights(address employee) public view returns(uint256) {
-    _requireMinted(_cards[employee]);
-
-    uint256 _tokenId = _cards[employee];
-
-    uint256 nbOfFullYears = (block.timestamp - _cardsData[_tokenId].startDate) / 31536000;
-    uint256 nbAdditionalDays = nbOfFullYears/5;
-
-    return 25 + nbAdditionalDays;
+    // TODO
   }
 
   function burnEmployeeCard(address _holder) public onlyOwner {
@@ -85,11 +72,14 @@ contract EmployeeCard is ERC721EnumerableNonTransferable {
    * Only the owner should be able to add tokens to this contract.
    */
   receive() external payable onlyOwner {
-    emit tokenReceived(msg.sender, msg.value);
+
   }
 
+  /**
+   * Process incoming unknown calls.
+   */
   fallback() external payable onlyOwner {
-    emit callReceived(msg.sender, msg.value, msg.data);
+
   }
 
 }

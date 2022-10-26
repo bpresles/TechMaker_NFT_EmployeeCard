@@ -7,11 +7,11 @@ export default function useEmployeeCardContract() {
     const contract: EmployeeCard = useContract<EmployeeCard>(EmployeeCardContract.networks[5777].address, EmployeeCardContract.abi);
 
     async function mintEmployeeCard(account: string, tokenURI: string, startDate: BigNumberish): Promise<ContractTransaction> {
-        return contract.mint(account, tokenURI, startDate);
+        return // TODO: call mint function of the contract.
     }
 
     async function getEmployeeVacationRights(account: string): Promise<BigNumber> {
-        const result = contract.getEmployeeVacationRights(account);
+        const result = // TODO: call the getEmployeeVacationRights of the contract
 
         result.then((result) => {
             console.log(result);

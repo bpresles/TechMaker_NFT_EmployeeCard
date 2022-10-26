@@ -55,14 +55,14 @@ const MintEmployeeCard = () => {
 
             contract.balanceOf(event.target.value).then((balance) => {
                 const userBalance = parseFloat(formatUnits(balance, 18));
-                /*setWalletBalance(userBalance);
+                setWalletBalance(userBalance);
 
                 if (userBalance > 0) {
                     setErrorMessage('An employee can only have 1 card.');
                 }
                 else {
                     setErrorMessage('');
-                }*/
+                }
             })
             .catch((err: Error) => {
                 console.log(err.message);
